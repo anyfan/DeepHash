@@ -22,27 +22,15 @@ def cifar_dataset(config):
     train_size = 500
     test_size = 100
 
-    transform = transforms.Compose([
-        transforms.Resize(config["crop_size"]),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
+    transform = transforms.Compose([transforms.Resize(config["crop_size"]), transforms.ToTensor(), transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
     cifar_dataset_root = '/dataset/cifar/'
     # Dataset
-    train_dataset = MyCIFAR10(root=cifar_dataset_root,
-                              train=True,
-                              transform=transform,
-                              download=True)
-    test_dataset = MyCIFAR10(root=cifar_dataset_root,
-                             train=False,
-                             transform=transform)
-    database_dataset = MyCIFAR10(root=cifar_dataset_root,
-                                 train=False,
-                                 transform=transform)
+    train_dataset = MyCIFAR10(root=cifar_dataset_root, train=True, transform=transform, download=True)
+    test_dataset = MyCIFAR10(root=cifar_dataset_root, train=False, transform=transform)
+    database_dataset = MyCIFAR10(root=cifar_dataset_root, train=False, transform=transform)
 
     X = np.concatenate((train_dataset.data, test_dataset.data))
-    L = np.concatenate(
-        (np.array(train_dataset.targets), np.array(test_dataset.targets)))
+    L = np.concatenate((np.array(train_dataset.targets), np.array(test_dataset.targets)))
 
     first = True
     for label in range(10):
@@ -58,10 +46,8 @@ def cifar_dataset(config):
             database_index = index[train_size + test_size:]
         else:
             test_index = np.concatenate((test_index, index[:test_size]))
-            train_index = np.concatenate(
-                (train_index, index[test_size:train_size + test_size]))
-            database_index = np.concatenate(
-                (database_index, index[train_size + test_size:]))
+            train_index = np.concatenate((train_index, index[test_size:train_size + test_size]))
+            database_index = np.concatenate((database_index, index[train_size + test_size:]))
         first = False
 
     if config["dataset"] == "cifar10":
@@ -85,18 +71,9 @@ def cifar_dataset(config):
     print("test_dataset", test_dataset.data.shape[0])
     print("database_dataset", database_dataset.data.shape[0])
 
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-                                               batch_size=batch_size,
-                                               shuffle=True,
-                                               num_workers=4)
-    test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-                                              batch_size=batch_size,
-                                              shuffle=False,
-                                              num_workers=4)
-    database_loader = torch.utils.data.DataLoader(dataset=database_dataset,
-                                                  batch_size=batch_size,
-                                                  shuffle=False,
-                                                  num_workers=4)
+    train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+    test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
+    database_loader = torch.utils.data.DataLoader(dataset=database_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
 
     return train_loader, test_loader, database_loader, \
         train_index.shape[0], test_index.shape[0], database_index.shape[0]

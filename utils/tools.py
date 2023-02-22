@@ -59,7 +59,7 @@ def compute_result(dataloader, net, device):
     net.eval()
     for img, cls, _ in tqdm(dataloader):
         clses.append(cls)
-        bs.append((net(img.to(device))).data.cpu())
+        bs.append((net(img.to(device)))[0].cpu())
     return torch.cat(bs).sign(), torch.cat(clses)
 
 
