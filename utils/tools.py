@@ -59,7 +59,7 @@ def compute_result(dataloader, net, device):
     net.eval()
     for img, cls, _ in tqdm(dataloader):
         clses.append(cls)
-        bs.append((net(img.to(device)))[0].cpu())
+        bs.append((net(img.to(device)))[0].data.cpu())
     return torch.cat(bs).sign(), torch.cat(clses)
 
 
@@ -73,8 +73,7 @@ def CalcTopMap(rB, qB, retrievalL, queryL, topk):
     num_query = queryL.shape[0]
     topkmap = 0
     for iter in tqdm(range(num_query)):
-        gnd = (np.dot(queryL[iter, :], retrievalL.transpose()) > 0).astype(
-            np.float32)
+        gnd = (np.dot(queryL[iter, :], retrievalL.transpose()) > 0).astype(np.float32)
         hamm = CalcHammingDist(qB[iter, :], rB)
         ind = np.argsort(hamm)
         gnd = gnd[ind]
@@ -100,8 +99,7 @@ def CalcTopMapWithPR(qB, queryL, rB, retrievalL, topk):
     prec = np.zeros((num_query, num_gallery))
     recall = np.zeros((num_query, num_gallery))
     for iter in tqdm(range(num_query)):
-        gnd = (np.dot(queryL[iter, :], retrievalL.transpose()) > 0).astype(
-            np.float32)
+        gnd = (np.dot(queryL[iter, :], retrievalL.transpose()) > 0).astype(np.float32)
         hamm = CalcHammingDist(qB[iter, :], rB)
         ind = np.argsort(hamm)
         gnd = gnd[ind]
@@ -137,8 +135,7 @@ def CalcTopMapWithPR(qB, queryL, rB, retrievalL, topk):
 
 
 # https://github.com/chrisbyd/DeepHash-pytorch/blob/master/validate.py
-def validate(config, Best_mAP, test_loader, dataset_loader, net, bit, epoch,
-             num_dataset):
+def validate(config, Best_mAP, test_loader, dataset_loader, net, bit, epoch, num_dataset):
     device = config["device"]
     # print("calculating test binary code......")
     tst_binary, tst_label = compute_result(test_loader, net, device=device)
@@ -147,15 +144,10 @@ def validate(config, Best_mAP, test_loader, dataset_loader, net, bit, epoch,
     trn_binary, trn_label = compute_result(dataset_loader, net, device=device)
 
     if "pr_curve_path" not in config:
-        mAP = CalcTopMap(trn_binary.numpy(), tst_binary.numpy(),
-                         trn_label.numpy(), tst_label.numpy(), config["topK"])
+        mAP = CalcTopMap(trn_binary.numpy(), tst_binary.numpy(), trn_label.numpy(), tst_label.numpy(), config["topK"])
     else:
         # need more memory
-        mAP, cum_prec, cum_recall = CalcTopMapWithPR(tst_binary.numpy(),
-                                                     tst_label.numpy(),
-                                                     trn_binary.numpy(),
-                                                     trn_label.numpy(),
-                                                     config["topK"])
+        mAP, cum_prec, cum_recall = CalcTopMapWithPR(tst_binary.numpy(), tst_label.numpy(), trn_binary.numpy(), trn_label.numpy(), config["topK"])
         index_range = num_dataset // 100
         index = [i * 100 - 1 for i in range(1, index_range + 1)]
         max_index = max(index)
@@ -164,11 +156,7 @@ def validate(config, Best_mAP, test_loader, dataset_loader, net, bit, epoch,
         c_prec = cum_prec[index]
         c_recall = cum_recall[index]
 
-        pr_data = {
-            "index": index,
-            "P": c_prec.tolist(),
-            "R": c_recall.tolist()
-        }
+        pr_data = {"index": index, "P": c_prec.tolist(), "R": c_recall.tolist()}
         os.makedirs(os.path.dirname(config["pr_curve_path"]), exist_ok=True)
         with open(config["pr_curve_path"], 'w') as f:
             f.write(json.dumps(pr_data))
@@ -177,21 +165,14 @@ def validate(config, Best_mAP, test_loader, dataset_loader, net, bit, epoch,
     if mAP > Best_mAP:
         Best_mAP = mAP
         if "save_path" in config:
-            save_path = os.path.join(config["save_path"],
-                                     f'{config["dataset"]}_{bit}bits_{mAP}')
+            save_path = os.path.join(config["save_path"], f'{config["dataset"]}_{bit}bits_{mAP}')
             os.makedirs(save_path, exist_ok=True)
             print("save in ", save_path)
-            np.save(os.path.join(save_path, "tst_label.npy"),
-                    tst_label.numpy())
-            np.save(os.path.join(save_path, "tst_binary.npy"),
-                    tst_binary.numpy())
-            np.save(os.path.join(save_path, "trn_binary.npy"),
-                    trn_binary.numpy())
-            np.save(os.path.join(save_path, "trn_label.npy"),
-                    trn_label.numpy())
+            np.save(os.path.join(save_path, "tst_label.npy"), tst_label.numpy())
+            np.save(os.path.join(save_path, "tst_binary.npy"), tst_binary.numpy())
+            np.save(os.path.join(save_path, "trn_binary.npy"), trn_binary.numpy())
+            np.save(os.path.join(save_path, "trn_label.npy"), trn_label.numpy())
             torch.save(net.state_dict(), os.path.join(save_path, "model.pt"))
-    print(
-        f"{config['info']} epoch:{epoch + 1} bit:{bit} dataset:{config['dataset']} MAP:{mAP} Best MAP: {Best_mAP}"
-    )
+    print(f"{config['info']} epoch:{epoch + 1} bit:{bit} dataset:{config['dataset']} MAP:{mAP} Best MAP: {Best_mAP}")
     print(config)
     return Best_mAP

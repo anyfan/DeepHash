@@ -23,7 +23,7 @@ def cifar_dataset(config):
     test_size = 100
 
     transform = transforms.Compose([transforms.Resize(config["crop_size"]), transforms.ToTensor(), transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
-    cifar_dataset_root = '/dataset/cifar/'
+    cifar_dataset_root = '/dataset'
     # Dataset
     train_dataset = MyCIFAR10(root=cifar_dataset_root, train=True, transform=transform, download=True)
     test_dataset = MyCIFAR10(root=cifar_dataset_root, train=False, transform=transform)
