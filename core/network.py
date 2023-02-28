@@ -5,7 +5,7 @@ from torchvision import models
 # 卷积神经网络
 class AlexNet(nn.Module):
 
-    def __init__(self, hash_bit, weights=models.AlexNet_Weights.DEFAULT):
+    def __init__(self, hash_bit, n_class, weights=models.AlexNet_Weights.DEFAULT):
         super(AlexNet, self).__init__()
 
         model_alexnet = models.alexnet(weights=weights)
@@ -29,8 +29,8 @@ class AlexNet(nn.Module):
         )
 
         self.classify_layer = nn.Sequential(
-            nn.ReLU(inplace=True),
-            nn.Linear(hash_bit, 10),
+            nn.ReLU(),
+            nn.Linear(hash_bit, n_class),
         )
 
     def forward(self, x):

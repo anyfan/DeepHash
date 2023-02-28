@@ -5,55 +5,6 @@ import os
 import json
 
 
-def config_dataset(config):
-    if "cifar" in config["dataset"]:
-        config["topK"] = -1
-        config["n_class"] = 10
-    elif config["dataset"] in ["nuswide_21", "nuswide_21_m"]:
-        config["topK"] = 5000
-        config["n_class"] = 21
-    elif config["dataset"] == "nuswide_81_m":
-        config["topK"] = 5000
-        config["n_class"] = 81
-    elif config["dataset"] == "coco":
-        config["topK"] = 5000
-        config["n_class"] = 80
-    elif config["dataset"] == "imagenet":
-        config["topK"] = 1000
-        config["n_class"] = 100
-    elif config["dataset"] == "mirflickr":
-        config["topK"] = -1
-        config["n_class"] = 38
-    elif config["dataset"] == "voc2012":
-        config["topK"] = -1
-        config["n_class"] = 20
-
-    config["data_path"] = "/dataset/" + config["dataset"] + "/"
-    if config["dataset"] == "nuswide_21":
-        config["data_path"] = "/dataset/NUS-WIDE/"
-    if config["dataset"] in ["nuswide_21_m", "nuswide_81_m"]:
-        config["data_path"] = "/dataset/nus_wide_m/"
-    if config["dataset"] == "coco":
-        config["data_path"] = "/dataset/COCO_2014/"
-    if config["dataset"] == "voc2012":
-        config["data_path"] = "/dataset/"
-    config["data"] = {
-        "train_set": {
-            "list_path": "./data/" + config["dataset"] + "/train.txt",
-            "batch_size": config["batch_size"]
-        },
-        "database": {
-            "list_path": "./data/" + config["dataset"] + "/database.txt",
-            "batch_size": config["batch_size"]
-        },
-        "test": {
-            "list_path": "./data/" + config["dataset"] + "/test.txt",
-            "batch_size": config["batch_size"]
-        }
-    }
-    return config
-
-
 def compute_result(dataloader, net, device):
     bs, clses = [], []
     net.eval()
@@ -75,7 +26,7 @@ def CalcTopMap(rB, qB, retrievalL, queryL, topk):
     for iter in tqdm(range(num_query)):
         gnd = (np.dot(queryL[iter, :], retrievalL.transpose()) > 0).astype(np.float32)
         hamm = CalcHammingDist(qB[iter, :], rB)
-        ind = np.argsort(hamm)
+        ind = np.argsort(hamm)  #argsort函数返回的是数组值从小到大的索引值
         gnd = gnd[ind]
 
         tgnd = gnd[0:topk]
@@ -174,5 +125,4 @@ def validate(config, Best_mAP, test_loader, dataset_loader, net, bit, epoch, num
             np.save(os.path.join(save_path, "trn_label.npy"), trn_label.numpy())
             torch.save(net.state_dict(), os.path.join(save_path, "model.pt"))
     print(f"{config['info']} epoch:{epoch + 1} bit:{bit} dataset:{config['dataset']} MAP:{mAP} Best MAP: {Best_mAP}")
-    print(config)
     return Best_mAP

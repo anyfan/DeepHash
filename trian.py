@@ -3,6 +3,7 @@ from loss import *
 from core.network import *
 from utils.tools import *
 from utils.data import *
+from utils.config import config_dataset
 import torch
 import time
 
@@ -24,10 +25,11 @@ config = {
     "step_continuation": 20,
     "resize_size": 256,
     "crop_size": 224,
-    "batch_size": 64,
+    "batch_size": 16,  # 2~32 最好，除非海量数据
     "net": AlexNet,
     # 数据
-    "dataset": "cifar10",
+    # "dataset": "cifar10",
+    "dataset": "imagenet",
     "topK": -1,
     "n_class": 10,  # 类被
     # 训练次数
@@ -64,9 +66,10 @@ def testAccuracy(model, test_loader):
 
 
 def train_val(config, bit):
-    train_loader, test_loader, dataset_loader, num_train, num_test, num_dataset = cifar_dataset(config)
+    config = config_dataset(config)
+    train_loader, test_loader, dataset_loader, num_train, num_test, num_dataset = get_data(config)
     config["num_train"] = num_train
-    net = config["net"](bit).to(device)
+    net = config["net"](bit, config["n_class"]).to(device)
 
     optimizer = config["optimizer"]["type"](net.parameters(), **(config["optimizer"]["optim_params"]))
 

@@ -6,6 +6,30 @@ import torchvision.datasets as dsets
 import torch
 
 
+class ImageList(object):
+
+    def __init__(self, data_path, image_list, transform):
+        self.imgs = [(data_path + val.split()[0], np.array([int(la) for la in val.split()[1:]])) for val in image_list]
+        self.transform = transform
+
+    def __getitem__(self, index):
+        path, target = self.imgs[index]
+        img = Image.open(path).convert('RGB')
+        img = self.transform(img)
+        return img, target, index
+
+    def __len__(self):
+        return len(self.imgs)
+
+
+def image_transform(resize_size, crop_size, data_set):
+    if data_set == "train_set":
+        step = [transforms.RandomHorizontalFlip(), transforms.RandomCrop(crop_size)]
+    else:
+        step = [transforms.CenterCrop(crop_size)]
+    return transforms.Compose([transforms.Resize(resize_size)] + step + [transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+
+
 class MyCIFAR10(dsets.CIFAR10):
 
     def __getitem__(self, index):
@@ -77,3 +101,21 @@ def cifar_dataset(config):
 
     return train_loader, test_loader, database_loader, \
         train_index.shape[0], test_index.shape[0], database_index.shape[0]
+
+
+# 获取数据集
+def get_data(config):
+    if "cifar" in config["dataset"]:
+        return cifar_dataset(config)
+
+    dsets = {}
+    dset_loaders = {}
+    data_config = config["data"]
+
+    for data_set in ["train_set", "test", "database"]:
+        dsets[data_set] = ImageList(config["data_path"], open(data_config[data_set]["list_path"]).readlines(), transform=image_transform(config["resize_size"], config["crop_size"], data_set))
+        print(data_set, len(dsets[data_set]))
+        dset_loaders[data_set] = util_data.DataLoader(dsets[data_set], batch_size=data_config[data_set]["batch_size"], shuffle=(data_set == "train_set"), num_workers=4)
+
+    return dset_loaders["train_set"], dset_loaders["test"], dset_loaders["database"], \
+        len(dsets["train_set"]), len(dsets["test"]), len(dsets["database"])
