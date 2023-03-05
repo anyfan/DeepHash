@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>图像哈希检索与分类系统</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+		<!-- 引入 layui.css -->
+		<link rel="stylesheet" href="//unpkg.com/layui@2.6.8/dist/css/layui.css" />
+		<style>
+			img {
+				max-width: 100%;
+				max-height: 200px;
+				border-radius: 5px;
+			}
+
+			p {
+				margin: 0;
+				padding: 0;
+				font-size: 14px;
+				font-family: "Microsoft Yahei", "微软雅黑", sans-serif;
+			}
+
+			#main {
+				width: 90%;
+				margin: 0 auto;
+				font-size: 0;
+				position: relative;
+			}
+
+			.box {
+				padding: 15px 0 0 15px;
+				float: left;
+				clear: both;
+				overflow: hidden;
+			}
+
+			.pic {
+				position: relative;
+				padding: 10px;
+				border: 1px solid #ccc;
+				border-radius: 5px;
+				box-shadow: 0 0 5px #ccc;
+			}
+
+			.pic img {
+				width: 230px;
+				height: auto;
+				display: block;
+				-moz-transition: 0.5s ease-in;
+				-webkit-transition: 0.5s ease-in;
+				-o-transition: 0.5s ease-in;
+				-ms-transition: 0.5s ease-in;
+				transition: 0.5s ease-in;
+			}
+
+			.pic:hover img {
+				transform: scale(1.05, 1.05);
+				-moz-transform: scale(1.05, 1.05);
+				-webkit-transform: scale(1.05, 1.05);
+				-o-transform: scale(1.05, 1.05);
+			}
+
+			.pic p {
+				width: 250px;
+				word-wrap: break-word;
+				word-break: break-all;
+				height: 100%;
+				position: absolute;
+				left: -250px;
+				top: 0px;
+				color: #ffffff;
+				z-index: 2;
+			}
+
+			.pic p span {
+				display: block;
+				width: 100%;
+				margin: 0 auto;
+				line-height: 24px;
+				font-size: 12px;
+				padding-top: 60px;
+			}
+
+			.pic p i {
+				width: 100%;
+				height: 100%;
+				display: block;
+				position: absolute;
+				left: 0;
+				top: 0;
+				z-index: -1;
+				background: #000000;
+				opacity: 0.7;
+				-moz-opacity: 0.7;
+				filter: alpha(opacity=70);
+				font-size: 16px;
+			}
+
+			.layui-upload-drag {
+				display: block;
+				max-width: 300px;
+				margin: 0 auto;
+				border: 3px solid #ccc;
+				border-radius: 5px;
+			}
+		</style>
+	</head>
+	<body style="padding: 20px; height: 100%; background-color: #f2f2f2">
+		<div style="font-size: 50px; text-align: center">
+			图像哈希检索与分类系统
+		</div>
+		<div
+			class="layui-upload-drag"
+			id="test10"
+			style="border-width: 5px; margin-top: 20px"
+		>
+			<i class="layui-icon"></i>
+			<p>点击上传，或将文件拖拽到此处</p>
+		</div>
+		<div class="layui-row layui-col-space5" style="margin-top: 20px">
+			<div class="layui-col-md5" style="text-align: center">
+				<div class="layui-hide" id="uploadDemoView">
+					<img src="" alt="上传成功后渲染" />
+				</div>
+			</div>
+			<div class="layui-col-md7">
+				<div style="word-break: break-all; margin-top: 20px" id="result"></div>
+			</div>
+		</div>
+		<div id="main"></div>
+	</body>
+	<!-- 引入 layui.js -->
+	<script src="//unpkg.com/layui@2.6.8/dist/layui.js"></script>
+	<script>
+		layui.use(["upload", "element", "layer"], function () {
+			var $ = layui.jquery,
+				upload = layui.upload,
+				element = layui.element,
+				layer = layui.layer;
+
+			function waterfall() {
+				var $boxs = $("#main>div");
+				var w = $boxs.eq(0).outerWidth();
+				var cols = Math.floor($(window).width() / w);
+				$("#main")
+					.width(w * cols)
+					.css("margin", "0 auto");
+				var hArr = [];
+				$boxs.each(function (index, value) {
+					var h = $(value).outerHeight();
+					if (index < cols) {
+						hArr[index] = h;
+						$(value).css({
+							position: "absolute",
+							top: 0 + "px",
+							left: index * w + "px",
+						});
+					} else {
+						var minH = Math.min.apply(null, hArr);
+						var minHIndex = $.inArray(minH, hArr);
+						$(value).css({
+							position: "absolute",
+							top: minH + "px",
+							left: minHIndex * w + "px",
+						});
+						hArr[minHIndex] += h;
+					}
+				});
+			}
+			$(window).resize(function () {
+				waterfall();
+			});
+			setInterval(function () {
+				waterfall();
+			}, 500);
+
+			//拖拽上传
+			upload.render({
+				elem: "#test10",
+				url: "/predict",
+				before: function (obj) {
+					//预读本地文件示例，不支持ie8
+					obj.preview(function (index, file, result) {
+						$("#uploadDemoView")
+							.removeClass("layui-hide")
+							.find("img")
+							.attr("src", result); //图片链接（base64）
+						layer.msg("处理中，请等待。。。。");
+					});
+				},
+				done: function (res) {
+					$("#result").html(
+						"<blockquote class='layui-elem-quote'>哈希码：" +
+							res["qB"] +
+							"</blockquote><blockquote class='layui-elem-quote'>图中可能是：" +
+							res["class"] +
+							"</blockquote>"
+					);
+					$("#main").html("");
+					res["result"].forEach(function (item, index) {
+						$("#main").append(
+							'<div class="box"><div class="pic"><img src="data:;base64,' +
+								item.img +
+								'" title="哈希码：' +
+								item.code +
+								"\n汉明距离: " +
+								item.hmm +
+								'"></div></div>'
+						);
+					});
+					waterfall();
+				},
+				error: function () {
+					layer.msg("上传失败！请检查网络！");
+				},
+			});
+		});
+	</script>
+</html>
